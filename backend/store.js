@@ -26,9 +26,13 @@ const memory = new Map();
 async function init() {
   if (process.env.DATABASE_URL) {
     const { Pool } = require('pg');
+    const url = process.env.DATABASE_URL;
+    // Render requires SSL; the Postgres container in docker-compose does
+    // not offer it, so only ask for SSL when the host is not local.
+    const isLocal = /@(localhost|127\.0\.0\.1|db|postgres)[:/]/.test(url);
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
+      connectionString: url,
+      ssl: isLocal ? false : { rejectUnauthorized: false }
     });
     await pool.query(`
       CREATE TABLE IF NOT EXISTS files (

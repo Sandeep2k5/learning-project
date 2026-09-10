@@ -1,0 +1,42 @@
+{
+  "name": "learning-project",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-20-bookworm",
+
+  "features": {
+    // Gives this codespace its own Docker daemon, so `docker build`,
+    // `docker run` and `docker compose` all work inside it.
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "dockerDashComposeVersion": "v2"
+    },
+    // kubectl + minikube, so k8s/ can be applied here too.
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+      "minikube": "latest",
+      "helm": "none"
+    }
+  },
+
+  "forwardPorts": [3000, 5173],
+  "portsAttributes": {
+    "3000": { "label": "backend API", "onAutoForward": "notify" },
+    "5173": { "label": "IDE (vite dev)", "onAutoForward": "openBrowser" }
+  },
+
+  "postCreateCommand": "cd web && npm install && echo '\\nReady. Open learn/docker.md and start at Lab 1.\\n'",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+
+  "remoteUser": "node"
+}
