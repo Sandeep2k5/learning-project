@@ -18,8 +18,11 @@
   <div id="notes"></div>
 
 <script>
-  // Replace with your deployed backend URL once you have it (Step 6 below)
-  const API_URL = "https://YOUR-BACKEND-URL.onrender.com";
+  // Default backend. Override without editing this file by adding
+  // ?api=https://your-service.onrender.com to the page URL.
+  const DEFAULT_API = "https://learning-api.onrender.com";
+  const API_URL =
+    new URLSearchParams(location.search).get("api") || DEFAULT_API;
 
   async function checkHealth() {
     try {
@@ -32,11 +35,15 @@
   }
 
   async function loadNotes() {
-    const res = await fetch(API_URL + "/api/notes");
-    const notes = await res.json();
-    document.getElementById("notes").innerHTML = notes
-      .map(n => `<div class="note">${n.text}</div>`)
-      .join("");
+    try {
+      const res = await fetch(API_URL + "/api/notes");
+      const notes = await res.json();
+      document.getElementById("notes").innerHTML = notes
+        .map(n => `<div class="note">${n.text}</div>`)
+        .join("");
+    } catch (e) {
+      // Backend asleep or unreachable; checkHealth() already reports it.
+    }
   }
 
   async function addNote() {
