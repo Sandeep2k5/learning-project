@@ -2,20 +2,262 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>My Learning Project</title>
 <style>
-  body { font-family: sans-serif; max-width: 500px; margin: 60px auto; }
-  input, button { padding: 8px; font-size: 14px; }
-  #notes { margin-top: 20px; }
-  .note { padding: 6px 0; border-bottom: 1px solid #eee; }
+  :root {
+    --bg:        #1e1e1e;
+    --chrome:    #323233;
+    --side:      #252526;
+    --border:    #3c3c3c;
+    --fg:        #d4d4d4;
+    --muted:     #858585;
+    --blue:      #569cd6;
+    --teal:      #4ec9b0;
+    --string:    #ce9178;
+    --bar-ok:    #0e639c;
+    --bar-wait:  #7a6a00;
+    --bar-down:  #a1260d;
+    --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: #101010;
+    color: var(--fg);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px;
+    min-height: 100vh;
+  }
+
+  .ide {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    flex-direction: column;
+    height: min(640px, calc(100vh - 48px));
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
+  }
+
+  /* ---- title bar ---- */
+  .titlebar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    height: 36px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot.r { background: #ff5f57; }
+  .dot.y { background: #febc2e; }
+  .dot.g { background: #28c840; }
+  .titlebar h1 {
+    margin: 0 auto;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--muted);
+    padding-right: 52px;
+  }
+
+  /* ---- main split ---- */
+  .split { flex: 1 1 auto; display: flex; min-height: 0; }
+
+  .sidebar {
+    flex: 0 0 176px;
+    background: var(--side);
+    border-right: 1px solid var(--border);
+    padding: 10px 0;
+    overflow-y: auto;
+  }
+  .sidebar h2 {
+    margin: 0 0 6px;
+    padding: 0 14px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .tree { list-style: none; margin: 0; padding: 0; }
+  .tree li { padding: 3px 14px 3px 24px; color: var(--muted); white-space: nowrap; }
+  .tree li.dir { padding-left: 14px; color: var(--fg); }
+  .tree li.on { background: #37373d; color: var(--fg); }
+
+  .editor { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }
+
+  .tabs {
+    flex: 0 0 auto;
+    display: flex;
+    background: var(--side);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 7px 16px;
+    font-size: 12px;
+    color: var(--fg);
+    background: var(--bg);
+    border-right: 1px solid var(--border);
+    border-top: 1px solid var(--blue);
+  }
+
+  .pane { flex: 1 1 auto; overflow-y: auto; padding: 8px 0; min-height: 0; }
+
+  .row { display: flex; gap: 14px; padding: 1px 16px 1px 0; }
+  .row:hover { background: #2a2d2e; }
+  .ln {
+    flex: 0 0 40px;
+    text-align: right;
+    color: var(--muted);
+    user-select: none;
+  }
+  .txt { color: var(--string); word-break: break-word; min-width: 0; }
+
+  .empty { padding: 10px 16px 10px 54px; color: var(--muted); font-style: italic; }
+
+  /* ---- prompt ---- */
+  .prompt {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--side);
+    border-top: 1px solid var(--border);
+  }
+  .caret { color: var(--teal); user-select: none; }
+  .prompt input {
+    flex: 1 1 auto;
+    min-width: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--fg);
+    font: inherit;
+    padding: 6px 9px;
+  }
+  .prompt input:focus { outline: none; border-color: var(--blue); }
+  .prompt input::placeholder { color: #6a6a6a; }
+  .prompt button {
+    flex: 0 0 auto;
+    background: var(--bar-ok);
+    border: 1px solid transparent;
+    border-radius: 3px;
+    color: #fff;
+    font: inherit;
+    padding: 6px 16px;
+    cursor: pointer;
+  }
+  .prompt button:hover:not(:disabled) { background: #1177bb; }
+  .prompt button:disabled { opacity: .45; cursor: default; }
+
+  /* ---- status bar ---- */
+  .statusbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 24px;
+    padding: 0 12px;
+    font-size: 11px;
+    color: #fff;
+    background: var(--bar-wait);
+    transition: background .25s;
+  }
+  .statusbar.ok   { background: var(--bar-ok); }
+  .statusbar.down { background: var(--bar-down); }
+  .statusbar .right { margin-left: auto; color: rgba(255, 255, 255, .8); }
+  .statusbar .pill { display: flex; align-items: center; gap: 6px; }
+  .beacon { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .statusbar.wait .beacon { animation: pulse 1.1s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+
+  .statusbar button {
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 640px) {
+    body { padding: 0; }
+    .ide { height: 100vh; border: none; border-radius: 0; max-width: none; }
+    .sidebar { display: none; }
+  }
 </style>
 </head>
 <body>
-  <h2>My Learning Project</h2>
-  <p id="status">Checking backend...</p>
-  <input id="text" placeholder="Type a note" />
-  <button onclick="addNote()">Add</button>
-  <div id="notes"></div>
+
+<div class="ide">
+  <div class="titlebar">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <h1>learning-project</h1>
+  </div>
+
+  <div class="split">
+    <nav class="sidebar" aria-label="Explorer">
+      <h2>Explorer</h2>
+      <ul class="tree">
+        <li class="dir">backend</li>
+        <li>server.js</li>
+        <li>Dockerfile</li>
+        <li class="dir">frontend</li>
+        <li class="on">index.html</li>
+        <li class="dir">k8s</li>
+        <li>deployment.yaml</li>
+        <li>service.yaml</li>
+      </ul>
+    </nav>
+
+    <main class="editor">
+      <div class="tabs"><span class="tab">notes.json</span></div>
+
+      <div class="pane" id="pane">
+        <p class="empty">Loading...</p>
+      </div>
+
+      <form class="prompt" id="form">
+        <span class="caret" aria-hidden="true">&rsaquo;</span>
+        <label class="sr" for="text">New note</label>
+        <input id="text" autocomplete="off" placeholder="Type a note, press Enter">
+        <button id="add" type="submit">Add</button>
+      </form>
+    </main>
+  </div>
+
+  <div class="statusbar wait" id="status">
+    <span class="pill">
+      <span class="beacon"></span>
+      <span id="statetext" role="status" aria-live="polite">Connecting...</span>
+    </span>
+    <button type="button" id="retry" hidden>Retry</button>
+    <span class="right" id="meta"></span>
+  </div>
+</div>
 
 <script>
   // Default backend. Override without editing this file by adding
@@ -24,42 +266,108 @@
   const API_URL =
     new URLSearchParams(location.search).get("api") || DEFAULT_API;
 
-  async function checkHealth() {
-    try {
-      const res = await fetch(API_URL + "/api/health");
-      const data = await res.json();
-      document.getElementById("status").innerText = "Backend OK: " + data.time;
-    } catch (e) {
-      document.getElementById("status").innerText = "Backend not reachable yet.";
-    }
+  const pane      = document.getElementById("pane");
+  const form      = document.getElementById("form");
+  const input     = document.getElementById("text");
+  const addBtn    = document.getElementById("add");
+  const statusBar = document.getElementById("status");
+  const stateText = document.getElementById("statetext");
+  const retryBtn  = document.getElementById("retry");
+  const meta      = document.getElementById("meta");
+
+  const host = new URL(API_URL).host;
+  meta.textContent = host;
+
+  function setState(kind, message) {
+    statusBar.className = "statusbar " + kind;
+    stateText.textContent = message;
+    retryBtn.hidden = kind !== "down";
   }
 
-  async function loadNotes() {
-    try {
-      const res = await fetch(API_URL + "/api/notes");
-      const notes = await res.json();
-      document.getElementById("notes").innerHTML = notes
-        .map(n => `<div class="note">${n.text}</div>`)
-        .join("");
-    } catch (e) {
-      // Backend asleep or unreachable; checkHealth() already reports it.
-    }
+  function showMessage(text) {
+    pane.textContent = "";
+    const p = document.createElement("p");
+    p.className = "empty";
+    p.textContent = text;
+    pane.appendChild(p);
   }
 
-  async function addNote() {
-    const text = document.getElementById("text").value;
-    if (!text) return;
-    await fetch(API_URL + "/api/notes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text })
+  function renderNotes(notes) {
+    if (!notes.length) {
+      showMessage("// no notes yet - add one below");
+      return;
+    }
+    pane.textContent = "";
+    notes.forEach(function (note, i) {
+      const row = document.createElement("div");
+      row.className = "row";
+      const ln = document.createElement("span");
+      ln.className = "ln";
+      ln.textContent = i + 1;
+      const txt = document.createElement("span");
+      txt.className = "txt";
+      // textContent, not innerHTML: note text is user input.
+      txt.textContent = JSON.stringify(note.text);
+      row.appendChild(ln);
+      row.appendChild(txt);
+      pane.appendChild(row);
     });
-    document.getElementById("text").value = "";
-    loadNotes();
   }
 
-  checkHealth();
-  loadNotes();
+  async function refresh() {
+    setState("wait", "Connecting...");
+    // Render free instances sleep; a cold start takes roughly 50s.
+    const slow = setTimeout(function () {
+      setState("wait", "Waking backend - free instances sleep, ~50s");
+    }, 4000);
+
+    try {
+      const healthRes = await fetch(API_URL + "/api/health");
+      if (!healthRes.ok) throw new Error("health " + healthRes.status);
+      const health = await healthRes.json();
+
+      const notesRes = await fetch(API_URL + "/api/notes");
+      if (!notesRes.ok) throw new Error("notes " + notesRes.status);
+      const notes = await notesRes.json();
+
+      clearTimeout(slow);
+      setState("ok", "Connected");
+      meta.textContent =
+        host + "  ·  " +
+        notes.length + (notes.length === 1 ? " note" : " notes") + "  ·  " +
+        new Date(health.time).toLocaleTimeString();
+      renderNotes(notes);
+    } catch (err) {
+      clearTimeout(slow);
+      setState("down", "Backend unreachable");
+      showMessage("// cannot reach " + API_URL);
+    }
+  }
+
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    addBtn.disabled = true;
+    try {
+      const res = await fetch(API_URL + "/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text })
+      });
+      if (!res.ok) throw new Error("post " + res.status);
+      input.value = "";
+      await refresh();
+    } catch (err) {
+      setState("down", "Could not save note");
+    } finally {
+      addBtn.disabled = false;
+      input.focus();
+    }
+  });
+
+  retryBtn.addEventListener("click", refresh);
+  refresh();
 </script>
 </body>
 </html>
