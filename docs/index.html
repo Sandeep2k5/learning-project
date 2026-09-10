@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Learning Project</title>
+<style>
+  body { font-family: sans-serif; max-width: 500px; margin: 60px auto; }
+  input, button { padding: 8px; font-size: 14px; }
+  #notes { margin-top: 20px; }
+  .note { padding: 6px 0; border-bottom: 1px solid #eee; }
+</style>
+</head>
+<body>
+  <h2>My Learning Project</h2>
+  <p id="status">Checking backend...</p>
+  <input id="text" placeholder="Type a note" />
+  <button onclick="addNote()">Add</button>
+  <div id="notes"></div>
+
+<script>
+  // Replace with your deployed backend URL once you have it (Step 6 below)
+  const API_URL = "https://YOUR-BACKEND-URL.onrender.com";
+
+  async function checkHealth() {
+    try {
+      const res = await fetch(API_URL + "/api/health");
+      const data = await res.json();
+      document.getElementById("status").innerText = "Backend OK: " + data.time;
+    } catch (e) {
+      document.getElementById("status").innerText = "Backend not reachable yet.";
+    }
+  }
+
+  async function loadNotes() {
+    const res = await fetch(API_URL + "/api/notes");
+    const notes = await res.json();
+    document.getElementById("notes").innerHTML = notes
+      .map(n => `<div class="note">${n.text}</div>`)
+      .join("");
+  }
+
+  async function addNote() {
+    const text = document.getElementById("text").value;
+    if (!text) return;
+    await fetch(API_URL + "/api/notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text })
+    });
+    document.getElementById("text").value = "";
+    loadNotes();
+  }
+
+  checkHealth();
+  loadNotes();
+</script>
+</body>
+</html>
