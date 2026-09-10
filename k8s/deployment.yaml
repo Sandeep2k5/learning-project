@@ -14,7 +14,8 @@ spec:
     spec:
       containers:
         - name: learning-api
-          image: ghcr.io/YOUR_GITHUB_USERNAME/learning-backend:latest
+          image: learning-backend:latest
+          imagePullPolicy: Never
           ports:
             - containerPort: 3000
           resources:
