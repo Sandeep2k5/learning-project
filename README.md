@@ -39,10 +39,23 @@ disposable and keep nothing valuable in it.
 Postgres when `DATABASE_URL` is set, otherwise an in-memory map (files reset
 on restart). `/api/health` reports which is active as `storage`.
 
+## Learn Docker
+
+Open this repo in a GitHub Codespace (**Code → Codespaces → Create**). The
+devcontainer gives it its own Docker daemon plus kubectl and minikube, so
+everything below works in the browser.
+
+Then work through [`learn/docker.md`](learn/docker.md) — seven labs on this
+codebase: images vs containers, layer caching, inspecting a running
+container, container networking, volumes, image size, and Kubernetes.
+
 ## Develop
 
     cd web && npm install && npm run dev     # http://localhost:5173
-    docker compose up --build                # backend on :3000
+    docker compose up -d --build             # api on :3000 + Postgres
+
+Compose runs the backend against a real Postgres, so `/api/health` reports
+`"storage":"postgres"` and saved files survive restarts.
 
 Point the dev frontend at a local backend with
 `http://localhost:5173/?api=http://localhost:3000`.

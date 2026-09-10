@@ -1,7 +1,33 @@
-version: "3.8"
+# Two containers on one network. `api` reaches Postgres at the hostname
+# `db` because Compose puts both on the same network and uses the service
+# name as the DNS name.
 services:
   api:
     build: ./backend
     ports:
       - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://learning:learning@db:5432/learning
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: learning
+      POSTGRES_PASSWORD: learning
+      POSTGRES_DB: learning
+    volumes:
+      # Named volume: data survives `docker compose down`.
+      # It does NOT survive `docker compose down -v`.
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U learning"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
