@@ -14,6 +14,10 @@ export default function App() {
   const [output, setOutput] = useState(null);
   const [running, setRunning] = useState(false);
   const [saving, setSaving] = useState(false);
+  // The three dots were decoration. A browser tab cannot be minimised or
+  // closed by script, so they drive the nearest real equivalents instead.
+  const [docked, setDocked] = useState(true);
+  const [full, setFull] = useState(false);
   // stdin per file, persisted: a test case you typed should survive a reload.
   const [inputs, setInputs] = useState(() => {
     try {
@@ -147,6 +151,26 @@ export default function App() {
     [files]
   );
 
+  // --- window controls ----------------------------------------------------
+  // Fullscreen can also be left with Escape, which fires no click, so track
+  // the document rather than trusting our own state.
+  useEffect(() => {
+    const sync = () => setFull(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', sync);
+    return () => document.removeEventListener('fullscreenchange', sync);
+  }, []);
+
+  const toggleFull = useCallback(() => {
+    const el = document.documentElement;
+    if (document.fullscreenElement) document.exitFullscreen?.();
+    else el.requestFullscreen?.().catch(() => {});
+  }, []);
+
+  const closeFile = useCallback(() => {
+    setActive(null);
+    setOutput(null);
+  }, []);
+
   // --- keyboard -----------------------------------------------------------
   useEffect(() => {
     function onKey(e) {
@@ -171,9 +195,25 @@ export default function App() {
   return (
     <div className="ide">
       <header className="titlebar">
-        <span className="dot r" />
-        <span className="dot y" />
-        <span className="dot g" />
+        <button
+          className="dot r"
+          onClick={closeFile}
+          disabled={!active}
+          title="Close the open file"
+          aria-label="Close the open file"
+        />
+        <button
+          className="dot y"
+          onClick={() => setDocked((d) => !d)}
+          title={docked ? 'Hide the input and terminal' : 'Show the input and terminal'}
+          aria-label={docked ? 'Hide the input and terminal' : 'Show the input and terminal'}
+        />
+        <button
+          className="dot g"
+          onClick={toggleFull}
+          title={full ? 'Leave fullscreen' : 'Fullscreen'}
+          aria-label={full ? 'Leave fullscreen' : 'Fullscreen'}
+        />
         <h1>learning-project</h1>
         <button
           className="run"
@@ -264,7 +304,7 @@ export default function App() {
             )}
           </div>
 
-          <div className="bottom">
+          <div className="bottom" hidden={!docked}>
             <Stdin
               value={(active && inputs[active]) || ''}
               disabled={!active}
