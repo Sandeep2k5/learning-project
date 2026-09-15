@@ -1,3 +1,10 @@
+// Short type chip shown before each name. Anything without a dot is
+// labelled "txt" rather than left ragged.
+function ext(name) {
+  const i = name.lastIndexOf('.');
+  return (i > 0 ? name.slice(i + 1) : 'txt').slice(0, 3).toUpperCase();
+}
+
 export default function Explorer({ files, active, drafts, onOpen, onCreate, onDelete }) {
   return (
     <nav className="sidebar" aria-label="Explorer">
@@ -12,6 +19,7 @@ export default function Explorer({ files, active, drafts, onOpen, onCreate, onDe
         {files.map((file) => (
           <li key={file.name} className={file.name === active ? 'on' : undefined}>
             <button className="name" onClick={() => onOpen(file.name)}>
+              <span className="ext">{ext(file.name)}</span>
               {file.name}
               {drafts[file.name] !== undefined && <i className="dirty" />}
             </button>

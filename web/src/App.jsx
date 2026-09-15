@@ -180,7 +180,14 @@ export default function App() {
           onClick={run}
           disabled={running || conn.state !== 'online' || !active}
         >
-          {running ? 'Running…' : '▶ Run'}
+          {running ? (
+            <>
+              <span className="spinner" />
+              Running…
+            </>
+          ) : (
+            '▶ Run'
+          )}
         </button>
       </header>
 
@@ -207,7 +214,30 @@ export default function App() {
           <div className="monaco">
             {active ? (
               <Editor
-                theme="vs-dark"
+                theme="ide-dark"
+                beforeMount={(monaco) => {
+                  // vs-dark ships a #1e1e1e canvas, which sits visibly
+                  // lighter than the panels around it. Match the shell so
+                  // the editor reads as part of the window, not a patch.
+                  monaco.editor.defineTheme('ide-dark', {
+                    base: 'vs-dark',
+                    inherit: true,
+                    rules: [],
+                    colors: {
+                      'editor.background': '#171a21',
+                      'editorGutter.background': '#171a21',
+                      'editor.lineHighlightBackground': '#1d212a',
+                      'editorLineNumber.foreground': '#454c59',
+                      'editorLineNumber.activeForeground': '#8b95a5',
+                      'editorCursor.foreground': '#6aa9ff',
+                      'editor.selectionBackground': '#2b3d5c',
+                      'editorIndentGuide.background1': '#23272f',
+                      'editorIndentGuide.activeBackground1': '#333947',
+                      'editorWidget.background': '#1b1f27',
+                      'editorSuggestWidget.background': '#1b1f27'
+                    }
+                  });
+                }}
                 path={active}
                 defaultLanguage="cpp"
                 value={content}

@@ -2,8 +2,8 @@
 // Explorer; whatever you type in the Input panel arrives on stdin.
 //
 // Include what you use. <bits/stdc++.h> is the competitive-programming
-// habit, but it pulls in the whole standard library: measured on this
-// compiler it costs noticeably more to build than the two headers below.
+// habit, but it pulls in the whole standard library and roughly triples
+// the build. The two headers below are all this needs.
 #include <iostream>
 #include <vector>
 

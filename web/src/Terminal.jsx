@@ -36,10 +36,10 @@ export default function Terminal({ output, onClear }) {
 
       <pre className="out">
         {!output && <span className="muted">Press Run to compile and execute the open file.</span>}
-        {output?.pending && <span className="muted">$ {COMMAND}</span>}
+        {output?.pending && <span className="prompt">$ {COMMAND}</span>}
         {output && !output.pending && (
           <>
-            <span className="muted">$ {COMMAND}</span>
+            <span className="prompt">$ {COMMAND}</span>
             {'\n'}
             {output.error && <span className="err">{output.error}</span>}
             {/* Warnings from a build that succeeded are worth reading too. */}
