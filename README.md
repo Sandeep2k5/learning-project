@@ -32,7 +32,7 @@ panel.
 ## Security
 
 `POST /api/run` compiles and executes arbitrary C++ and the URL is public.
-The guards are a 10s compile timeout and a 5s run timeout, both with
+The guards are a 30s compile timeout and a 5s run timeout, both with
 SIGKILL, a 64KB output cap, a 100KB code cap, a 64KB stdin cap, 20 runs per
 minute per IP, a stripped environment, and a non-root container user. That
 is damage limitation, not a sandbox — treat the container as disposable and
@@ -42,9 +42,13 @@ The API runs on Render's free plan, which sleeps after 15 minutes idle and
 takes roughly a minute to wake. The IDE retries the health check four times
 before reporting the backend down, so a cold open looks slow, not broken.
 
-Compiling is slower than interpreting. A first build of a file including
-`<bits/stdc++.h>` takes a couple of seconds; the terminal reports build and
-run time separately so you can see which phase cost what.
+Compiling is slower than interpreting, and the free instance is slow: a
+build including `<bits/stdc++.h>` measured between 7 and 20 seconds there,
+against under 200ms to actually run. The terminal reports build and run time
+separately so you can see which phase cost what.
+
+Precompiling that header was tried and reverted — it made builds slower on
+this plan, not faster. The Dockerfile records the numbers.
 
 ## Storage
 

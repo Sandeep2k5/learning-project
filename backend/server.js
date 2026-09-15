@@ -3,7 +3,6 @@ const cors = require('cors');
 const { execFile } = require('child_process');
 const { randomUUID } = require('crypto');
 const fs = require('fs/promises');
-const fsSync = require('fs');
 const os = require('os');
 const path = require('path');
 
@@ -16,7 +15,7 @@ app.use(express.json({ limit: '256kb' }));
 // --- limits -------------------------------------------------------------
 // /api/run compiles and executes user-supplied code. These caps are the
 // only thing standing between a public endpoint and an unbounded process.
-const COMPILE_TIMEOUT_MS = 20_000;
+const COMPILE_TIMEOUT_MS = 30_000;
 const RUN_TIMEOUT_MS = 5000;
 const RUN_MAX_OUTPUT = 64 * 1024;
 const RUN_PER_MIN = 20;
@@ -32,16 +31,11 @@ const SANDBOX_ENV = {
 };
 
 const CXX = process.env.CXX || 'g++';
-// -O1 not -O2: these must match the flags the PCH in the Dockerfile was
-// built with, or GCC discards it and reparses the header every run.
-const BASE_FLAGS = ['-std=gnu++20', '-O1', '-Wall', '-pipe'];
-
-// The image precompiles a prelude that pulls in <bits/stdc++.h>. Forcing it
-// in with -include means the user's own include hits the guards for free.
-// Absent outside the container (local dev on Windows), so it is optional.
-const PCH = '/opt/pch/prelude.hpp';
-const usePch = fsSync.existsSync(PCH + '.gch');
-const CXX_FLAGS = usePch ? [...BASE_FLAGS, '-include', PCH] : BASE_FLAGS;
+// -O1, not -O2: on Render's free 0.1-CPU instance the build is the slow
+// part (about 7s) and the run is not (under 200ms for typical DSA input),
+// so the trade goes to compile speed. -O0 would be faster still, but it
+// costs real runtime against the 5s limit on large N.
+const CXX_FLAGS = ['-std=gnu++20', '-O1', '-Wall', '-pipe'];
 
 const buckets = new Map();
 
@@ -73,7 +67,6 @@ app.get('/api/health', (req, res) => {
     time: new Date().toISOString(),
     language: 'c++',
     compiler: compilerVersion,
-    pch: usePch,
     node: process.version,
     storage: store.kind
   });

@@ -10,7 +10,7 @@ export default function Terminal({ output, onClear }) {
         {output && !output.pending && (
           <>
             {output.compileTimedOut && (
-              <span className="badge warn">compile timed out at 20s</span>
+              <span className="badge warn">compile timed out at 30s</span>
             )}
             {failedToBuild && !output.compileTimedOut && (
               <span className="badge bad">compile failed</span>
@@ -47,7 +47,7 @@ export default function Terminal({ output, onClear }) {
               <span className={failedToBuild ? 'err' : 'warnline'}>{output.diagnostics}</span>
             )}
             {output.compileTimedOut && (
-              <span className="err">Compiler killed after 20s.</span>
+              <span className="err">Compiler killed after 30s.</span>
             )}
             {output.stdout}
             {output.stderr && <span className="err">{output.stderr}</span>}
