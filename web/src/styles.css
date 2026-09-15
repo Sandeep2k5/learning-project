@@ -197,15 +197,46 @@ kbd {
   font-style: italic;
 }
 
-/* ---- terminal ---- */
-.terminal {
+/* ---- bottom dock: stdin beside the terminal ---- */
+.bottom {
   flex: 0 0 200px;
+  display: flex;
+  min-height: 0;
+  border-top: 1px solid var(--border);
+}
+
+.stdin {
+  flex: 0 0 240px;
   display: flex;
   flex-direction: column;
   background: var(--panel);
-  border-top: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  min-width: 0;
+}
+.stdin-box {
+  flex: 1 1 auto;
+  min-height: 0;
+  resize: none;
+  border: 0;
+  outline: 0;
+  padding: 8px 14px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+}
+.stdin-box::placeholder { color: #4a4a4a; }
+.stdin-box:disabled { cursor: not-allowed; }
+
+/* ---- terminal ---- */
+.terminal {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  min-width: 0;
   min-height: 0;
 }
+.stdin header,
 .terminal header {
   flex: 0 0 auto;
   display: flex;
@@ -214,6 +245,7 @@ kbd {
   padding: 5px 8px 5px 14px;
   border-bottom: 1px solid var(--border);
 }
+.stdin .label,
 .terminal .label {
   font-size: 10px;
   font-weight: 600;
@@ -244,6 +276,8 @@ kbd {
 }
 .out .muted { color: var(--muted); }
 .out .err { color: var(--red); }
+/* A build that succeeded can still have warnings; they are not errors. */
+.out .warnline { color: var(--amber); }
 
 /* ---- status bar ---- */
 .statusbar {
@@ -285,5 +319,6 @@ kbd {
   #root { padding: 0; }
   .ide { height: 100vh; border: none; border-radius: 0; }
   .sidebar { flex-basis: 150px; }
-  .terminal { flex-basis: 150px; }
+  .bottom { flex-basis: 170px; }
+  .stdin { flex-basis: 120px; }
 }

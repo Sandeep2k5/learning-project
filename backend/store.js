@@ -2,22 +2,21 @@
 // it from render.yaml); falls back to an in-memory map so the container
 // still runs locally and in Kubernetes without a database.
 
-const SEED = [
-  {
-    name: 'main.js',
-    content: `// Press Run (or Ctrl+Enter). This executes on the server.
-const squares = [1, 2, 3, 4, 5].map((n) => n * n);
-console.log('squares:', squares);
-console.log('node:', process.version);
-`
-  },
-  {
-    name: 'scratch.js',
-    content: `// Anything you write here runs with a 5s timeout.
-for (let i = 0; i < 3; i++) console.log('tick', i);
-`
-  }
-];
+// Starter files, kept as real .cpp on disk under seed/. Embedding C++ in a
+// JS template literal means hand-escaping every newline escape in the
+// source; reading the files avoids that whole class of bug.
+const fs = require('fs');
+const path = require('path');
+
+const SEED_DIR = path.join(__dirname, 'seed');
+const SEED = fs
+  .readdirSync(SEED_DIR)
+  .filter((f) => f.endsWith('.cpp'))
+  .sort()
+  .map((name) => ({
+    name,
+    content: fs.readFileSync(path.join(SEED_DIR, name), 'utf8')
+  }));
 
 let kind = 'memory';
 let pool = null;

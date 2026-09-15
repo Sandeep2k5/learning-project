@@ -3,6 +3,7 @@ import Editor from '@monaco-editor/react';
 import * as api from './api';
 import Explorer from './Explorer';
 import Terminal from './Terminal';
+import Stdin from './Stdin';
 import StatusBar from './StatusBar';
 
 export default function App() {
@@ -13,8 +14,18 @@ export default function App() {
   const [output, setOutput] = useState(null);
   const [running, setRunning] = useState(false);
   const [saving, setSaving] = useState(false);
+  // stdin per file, persisted: a test case you typed should survive a reload.
+  const [inputs, setInputs] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('stdin') || '{}');
+    } catch {
+      return {};
+    }
+  });
 
   const editorRef = useRef(null);
+  const inputsRef = useRef(inputs);
+  inputsRef.current = inputs;
   const draftsRef = useRef(drafts);
   draftsRef.current = drafts;
   const activeRef = useRef(active);
@@ -27,21 +38,44 @@ export default function App() {
   const dirty = active != null && active in drafts;
 
   // --- load ---------------------------------------------------------------
+  // Render's free tier sleeps after 15 minutes idle and takes the better
+  // part of a minute to wake, so the first request after a break always
+  // fails. Retry a few times before calling the backend down.
   const connect = useCallback(async () => {
-    setConn({ state: 'connecting', info: null, error: null });
-    try {
-      const [info, list] = await Promise.all([api.health(), api.listFiles()]);
-      setConn({ state: 'online', info, error: null });
-      setFiles(list);
-      setActive((cur) => cur ?? list[0]?.name ?? null);
-    } catch (err) {
-      setConn({ state: 'offline', info: null, error: err.message });
+    const attempts = 4;
+    for (let i = 0; i < attempts; i++) {
+      setConn({
+        state: 'connecting',
+        info: null,
+        error: i > 0 ? 'waking the backend, this can take a minute' : null
+      });
+      try {
+        const [info, list] = await Promise.all([api.health(), api.listFiles()]);
+        setConn({ state: 'online', info, error: null });
+        setFiles(list);
+        setActive((cur) => cur ?? list[0]?.name ?? null);
+        return;
+      } catch (err) {
+        if (i === attempts - 1) {
+          setConn({ state: 'offline', info: null, error: err.message });
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 6000));
+      }
     }
   }, []);
 
   useEffect(() => {
     connect();
   }, [connect]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('stdin', JSON.stringify(inputs));
+    } catch {
+      /* private mode or full quota; the input just will not persist */
+    }
+  }, [inputs]);
 
   // --- actions ------------------------------------------------------------
   const save = useCallback(async () => {
@@ -72,7 +106,7 @@ export default function App() {
       // Save first so what runs is what the file contains.
       if (name in draftsRef.current) await save();
       const code = editorRef.current?.getValue() ?? '';
-      const result = await api.runCode(code);
+      const result = await api.runCode(code, inputsRef.current[name] ?? '');
       setOutput({ ...result, name });
     } catch (err) {
       setOutput({ error: err.message, name });
@@ -82,7 +116,7 @@ export default function App() {
   }, [save]);
 
   const createFile = useCallback(async () => {
-    const name = window.prompt('New file name', 'untitled.js');
+    const name = window.prompt('New file name', 'untitled.cpp');
     if (!name) return;
     if (!/^[\w.-]{1,64}$/.test(name)) {
       window.alert('Use letters, numbers, dot, dash or underscore (max 64).');
@@ -184,7 +218,7 @@ export default function App() {
               <Editor
                 theme="vs-dark"
                 path={active}
-                defaultLanguage="javascript"
+                defaultLanguage="cpp"
                 value={content}
                 onMount={(editor) => {
                   editorRef.current = editor;
@@ -200,7 +234,7 @@ export default function App() {
                   scrollBeyondLastLine: false,
                   smoothScrolling: true,
                   padding: { top: 10 },
-                  tabSize: 2
+                  tabSize: 4
                 }}
                 loading={<div className="pending">Loading editor…</div>}
               />
@@ -209,7 +243,16 @@ export default function App() {
             )}
           </div>
 
-          <Terminal output={output} onClear={() => setOutput(null)} />
+          <div className="bottom">
+            <Stdin
+              value={(active && inputs[active]) || ''}
+              disabled={!active}
+              onChange={(text) =>
+                setInputs((prev) => ({ ...prev, [active]: text }))
+              }
+            />
+            <Terminal output={output} onClear={() => setOutput(null)} />
+          </div>
         </main>
       </div>
 

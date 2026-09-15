@@ -6,6 +6,14 @@ const LABEL = {
   offline: 'Backend unreachable'
 };
 
+// "g++ (x86_64-posix-seh-rev1, Built by MinGW-W64 project) 12.2.0" is far
+// too long for a 24px bar; "g++ 12.2.0" says everything that matters.
+function shortCompiler(version) {
+  if (!version) return null;
+  const v = version.match(/\d+\.\d+(\.\d+)?/);
+  return v ? `g++ ${v[0]}` : version;
+}
+
 export default function StatusBar({ conn, dirty, saving, fileCount, onRetry }) {
   const kind =
     conn.state === 'online' ? 'ok' : conn.state === 'offline' ? 'down' : 'wait';
@@ -15,7 +23,7 @@ export default function StatusBar({ conn, dirty, saving, fileCount, onRetry }) {
       <span className="pill">
         <span className="beacon" />
         <span role="status" aria-live="polite">
-          {conn.error && conn.state === 'online' ? conn.error : LABEL[conn.state]}
+          {conn.error && conn.state !== 'offline' ? conn.error : LABEL[conn.state]}
         </span>
       </span>
 
@@ -27,7 +35,7 @@ export default function StatusBar({ conn, dirty, saving, fileCount, onRetry }) {
         {saving ? 'Saving…' : dirty ? 'Unsaved changes' : 'Saved'}
         {'  ·  '}
         {fileCount} {fileCount === 1 ? 'file' : 'files'}
-        {conn.info && `  ·  ${conn.info.storage}  ·  ${conn.info.node}`}
+        {conn.info && `  ·  ${conn.info.storage}  ·  ${shortCompiler(conn.info.compiler)}`}
         {'  ·  '}
         {API_HOST}
       </span>

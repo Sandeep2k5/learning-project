@@ -37,9 +37,11 @@ export const saveFile = (name, content) =>
 export const deleteFile = (name) =>
   request('/api/files/' + encodeURIComponent(name), { method: 'DELETE' });
 
-export const runCode = (code) =>
+// `stdin` is whatever the Input panel holds — DSA problems read their
+// test case from standard input, so it travels with the code.
+export const runCode = (code, stdin = '') =>
   request('/api/run', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code })
+    body: JSON.stringify({ code, stdin })
   });
