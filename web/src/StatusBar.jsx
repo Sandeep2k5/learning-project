@@ -1,18 +1,10 @@
-import { API_HOST } from './api';
+import { COMPILER, CXX_ARGS } from './api';
 
 const LABEL = {
-  connecting: 'Connecting…',
-  online: 'Connected',
-  offline: 'Backend unreachable'
+  connecting: 'Loading…',
+  online: 'Ready',
+  offline: 'Cannot reach the compiler service'
 };
-
-// "g++ (x86_64-posix-seh-rev1, Built by MinGW-W64 project) 12.2.0" is far
-// too long for a 24px bar; "g++ 12.2.0" says everything that matters.
-function shortCompiler(version) {
-  if (!version) return null;
-  const v = version.match(/\d+\.\d+(\.\d+)?/);
-  return v ? `g++ ${v[0]}` : version;
-}
 
 export default function StatusBar({ conn, dirty, saving, fileCount, onRetry }) {
   const kind =
@@ -35,9 +27,9 @@ export default function StatusBar({ conn, dirty, saving, fileCount, onRetry }) {
         {saving ? 'Saving…' : dirty ? 'Unsaved changes' : 'Saved'}
         {'  ·  '}
         {fileCount} {fileCount === 1 ? 'file' : 'files'}
-        {conn.info && `  ·  ${conn.info.storage}  ·  ${shortCompiler(conn.info.compiler)}`}
+        {conn.info && `  ·  ${conn.info.storage}  ·  ${conn.info.compiler}`}
         {'  ·  '}
-        {API_HOST}
+        <span title={`godbolt.org ${COMPILER} ${CXX_ARGS}`}>Compiler Explorer</span>
       </span>
     </footer>
   );

@@ -38,30 +38,15 @@ export default function App() {
   const dirty = active != null && active in drafts;
 
   // --- load ---------------------------------------------------------------
-  // Render's free tier sleeps after 15 minutes idle and takes the better
-  // part of a minute to wake, so the first request after a break always
-  // fails. Retry a few times before calling the backend down.
   const connect = useCallback(async () => {
-    const attempts = 4;
-    for (let i = 0; i < attempts; i++) {
-      setConn({
-        state: 'connecting',
-        info: null,
-        error: i > 0 ? 'waking the backend, this can take a minute' : null
-      });
-      try {
-        const [info, list] = await Promise.all([api.health(), api.listFiles()]);
-        setConn({ state: 'online', info, error: null });
-        setFiles(list);
-        setActive((cur) => cur ?? list[0]?.name ?? null);
-        return;
-      } catch (err) {
-        if (i === attempts - 1) {
-          setConn({ state: 'offline', info: null, error: err.message });
-          return;
-        }
-        await new Promise((r) => setTimeout(r, 6000));
-      }
+    setConn({ state: 'connecting', info: null, error: null });
+    try {
+      const [info, list] = await Promise.all([api.health(), api.listFiles()]);
+      setConn({ state: 'online', info, error: null });
+      setFiles(list);
+      setActive((cur) => cur ?? list[0]?.name ?? null);
+    } catch (err) {
+      setConn({ state: 'offline', info: null, error: err.message });
     }
   }, []);
 

@@ -1,4 +1,4 @@
-const COMMAND = 'g++ -std=gnu++20 -O1 main.cpp -o main && ./main';
+const COMMAND = 'g++ -O1 -std=gnu++20 -Wall main.cpp && ./a.out';
 
 export default function Terminal({ output, onClear }) {
   const failedToBuild = output && output.compileOk === false;
@@ -10,7 +10,7 @@ export default function Terminal({ output, onClear }) {
         {output && !output.pending && (
           <>
             {output.compileTimedOut && (
-              <span className="badge warn">compile timed out at 30s</span>
+              <span className="badge warn">compile failed</span>
             )}
             {failedToBuild && !output.compileTimedOut && (
               <span className="badge bad">compile failed</span>
@@ -47,16 +47,16 @@ export default function Terminal({ output, onClear }) {
               <span className={failedToBuild ? 'err' : 'warnline'}>{output.diagnostics}</span>
             )}
             {output.compileTimedOut && (
-              <span className="err">Compiler killed after 30s.</span>
+              <span className="err">Compiler gave up.</span>
             )}
             {output.stdout}
             {output.stderr && <span className="err">{output.stderr}</span>}
             {output.timedOut && (
               <span className="err">
-                {'\n'}Killed after 5s. Infinite loop?
+                {'\n'}Killed for exceeding the time limit. Infinite loop?
               </span>
             )}
-            {output.heavyInclude && output.compileMs > 10000 && (
+            {output.heavyInclude && output.compileMs > 2500 && (
               <span className="muted">
                 {'\n'}Slow build: bits/stdc++.h parses the whole standard
                 library. Including just what you use builds about 3x faster here.
