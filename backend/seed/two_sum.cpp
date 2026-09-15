@@ -2,7 +2,10 @@
 // Input:  first line n and target, second line n numbers.
 // Try:    4 9
 //         2 7 11 15
-#include <bits/stdc++.h>
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+
 using namespace std;
 
 vector<int> twoSum(const vector<int>& nums, int target) {

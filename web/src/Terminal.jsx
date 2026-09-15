@@ -56,6 +56,12 @@ export default function Terminal({ output, onClear }) {
                 {'\n'}Killed after 5s. Infinite loop?
               </span>
             )}
+            {output.heavyInclude && output.compileMs > 10000 && (
+              <span className="muted">
+                {'\n'}Slow build: bits/stdc++.h parses the whole standard
+                library. Including just what you use builds about 3x faster here.
+              </span>
+            )}
           </>
         )}
       </pre>

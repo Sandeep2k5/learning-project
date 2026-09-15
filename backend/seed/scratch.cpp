@@ -1,5 +1,6 @@
-// Anything here gets 10s to compile and 5s to run.
-#include <bits/stdc++.h>
+// Anything here gets 30s to compile and 5s to run.
+#include <iostream>
+
 using namespace std;
 
 int main() {

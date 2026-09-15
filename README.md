@@ -42,13 +42,24 @@ The API runs on Render's free plan, which sleeps after 15 minutes idle and
 takes roughly a minute to wake. The IDE retries the health check four times
 before reporting the backend down, so a cold open looks slow, not broken.
 
-Compiling is slower than interpreting, and the free instance is slow: a
-build including `<bits/stdc++.h>` measured between 7 and 20 seconds there,
-against under 200ms to actually run. The terminal reports build and run time
-separately so you can see which phase cost what.
+Compiling is slower than interpreting, and the free instance is slow. What
+dominates is which headers the source pulls in. Interleaved on one instance,
+same program, same input:
 
-Precompiling that header was tried and reverted — it made builds slower on
-this plan, not faster. The Dockerfile records the numbers.
+| Includes | Build |
+|---|---|
+| `<bits/stdc++.h>` | 19.0s, 19.6s, 19.8s |
+| `<iostream> <vector> <unordered_map>` | 6.2s, 5.5s, 5.2s |
+
+So the seed files include what they use, and the terminal says so when a
+slow build came from `<bits/stdc++.h>`. Running the program is not the slow
+part: under 200ms for typical DSA input. The terminal reports build and run
+time separately.
+
+Measure on the free plan before trusting any speedup, and interleave the
+runs — its throughput swings about 3x, enough to fake a result either way.
+A precompiled header was added and removed on the strength of a comparison
+made across time, which turned out to show nothing.
 
 ## Storage
 

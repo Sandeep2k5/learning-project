@@ -5,12 +5,19 @@ WORKDIR /app
 # the libc headers g++ cannot build without. This is the single biggest
 # layer in the image — see learn/docker.md Lab 6.
 #
-# No precompiled header here on purpose. Precompiling <bits/stdc++.h> and
-# forcing it in with -include was measured on the free instance and made
-# builds slower, not faster: 19.6s then 8.1s against 7.3s without it. The
-# .gch is roughly a hundred megabytes and reading it back on a 0.1-CPU,
-# 512MB instance costs more than reparsing the header. Do not reintroduce
-# it without measuring on the target plan.
+# No precompiled header here. One was tried and the measurement that
+# justified removing it was confounded — builds were compared across time
+# on a shared free instance whose throughput swings roughly 3x, so the
+# comparison said nothing about the PCH either way.
+#
+# A controlled interleaved test on one instance found the real lever is
+# which headers the source includes, not precompilation:
+#
+#   #include <bits/stdc++.h>          19.0s  19.6s  19.8s
+#   <iostream> <vector> <unordered_map>  6.2s   5.5s   5.2s
+#
+# So the seed files include what they use. If a PCH is ever revisited,
+# interleave the runs on a single instance.
 RUN apk add --no-cache g++ musl-dev
 
 COPY package.json .

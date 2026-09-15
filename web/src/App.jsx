@@ -107,7 +107,13 @@ export default function App() {
       if (name in draftsRef.current) await save();
       const code = editorRef.current?.getValue() ?? '';
       const result = await api.runCode(code, inputsRef.current[name] ?? '');
-      setOutput({ ...result, name });
+      // Pulling in the whole standard library roughly triples build time on
+      // the free backend; worth saying so when a build was actually slow.
+      setOutput({
+        ...result,
+        name,
+        heavyInclude: code.includes('bits/stdc++.h')
+      });
     } catch (err) {
       setOutput({ error: err.message, name });
     } finally {
