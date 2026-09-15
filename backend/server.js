@@ -3,6 +3,7 @@ const cors = require('cors');
 const { execFile } = require('child_process');
 const { randomUUID } = require('crypto');
 const fs = require('fs/promises');
+const fsSync = require('fs');
 const os = require('os');
 const path = require('path');
 
@@ -33,7 +34,14 @@ const SANDBOX_ENV = {
 const CXX = process.env.CXX || 'g++';
 // -O1 not -O2: these must match the flags the PCH in the Dockerfile was
 // built with, or GCC discards it and reparses the header every run.
-const CXX_FLAGS = ['-std=gnu++20', '-O1', '-Wall', '-pipe'];
+const BASE_FLAGS = ['-std=gnu++20', '-O1', '-Wall', '-pipe'];
+
+// The image precompiles a prelude that pulls in <bits/stdc++.h>. Forcing it
+// in with -include means the user's own include hits the guards for free.
+// Absent outside the container (local dev on Windows), so it is optional.
+const PCH = '/opt/pch/prelude.hpp';
+const usePch = fsSync.existsSync(PCH + '.gch');
+const CXX_FLAGS = usePch ? [...BASE_FLAGS, '-include', PCH] : BASE_FLAGS;
 
 const buckets = new Map();
 
@@ -65,6 +73,7 @@ app.get('/api/health', (req, res) => {
     time: new Date().toISOString(),
     language: 'c++',
     compiler: compilerVersion,
+    pch: usePch,
     node: process.version,
     storage: store.kind
   });

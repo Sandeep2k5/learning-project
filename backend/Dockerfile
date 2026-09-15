@@ -6,13 +6,20 @@ WORKDIR /app
 # layer in the image — see learn/docker.md Lab 6.
 RUN apk add --no-cache g++ musl-dev
 
-# Precompile <bits/stdc++.h>. Every DSA solution includes it, and parsing it
-# from scratch costs seconds on Render's 0.1-CPU free instance. GCC picks up
-# <header>.gch automatically when the flags match CXX_FLAGS in server.js,
-# and silently falls back to the real header when they do not.
-# Best-effort: a missing header costs speed, not correctness, so it must
-# never fail the deploy.
-RUN STDCPP=$(find /usr/include -path '*bits*' -name 'stdc++.h' | head -1); if [ -n "$STDCPP" ]; then g++ -std=gnu++20 -O1 -Wall -x c++-header "$STDCPP" -o "$STDCPP.gch" && echo "PCH built: $STDCPP.gch"; else echo 'no bits/stdc++.h found, skipping PCH'; fi
+# Precompile <bits/stdc++.h>. Every DSA solution includes it and parsing it
+# costs seconds on Render's 0.1-CPU free instance.
+#
+# Rather than hunting for the real header and dropping a .gch beside it —
+# which depends on the distro's include layout — own the path: a one-line
+# prelude at a fixed location, precompiled next to itself. server.js passes
+# `-include /opt/pch/prelude.hpp`, so the user's own include hits the guards
+# and costs nothing. Flags here must match CXX_FLAGS in server.js or GCC
+# discards the PCH without saying so.
+RUN mkdir -p /opt/pch && echo '#include <bits/stdc++.h>' > /opt/pch/prelude.hpp && g++ -std=gnu++20 -O1 -Wall -x c++-header /opt/pch/prelude.hpp -o /opt/pch/prelude.hpp.gch && chmod -R a+r /opt/pch && ls -lh /opt/pch/prelude.hpp.gch
+
+# Prove it. The build log should show the second compile far faster than a
+# cold parse of the header would be.
+RUN printf '#include <bits/stdc++.h>\nint main(){std::vector<int> v{1,2,3};std::cout<<v.size();}\n' > /tmp/pchtest.cpp && echo '--- without PCH ---' && time g++ -std=gnu++20 -O1 -Wall -pipe /tmp/pchtest.cpp -o /tmp/a.out && echo '--- with PCH ---' && time g++ -std=gnu++20 -O1 -Wall -pipe -include /opt/pch/prelude.hpp /tmp/pchtest.cpp -o /tmp/b.out && rm -f /tmp/pchtest.cpp /tmp/a.out /tmp/b.out
 
 COPY package.json .
 RUN npm install --omit=dev
